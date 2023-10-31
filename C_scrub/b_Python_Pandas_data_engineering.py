@@ -2,6 +2,7 @@ import sys
 
 sys.path.append("../")
 
+import os
 import pandas as pd
 from joblib import dump, load
 
@@ -20,8 +21,15 @@ from feature_engine.transformation import LogCpTransformer
 
 #%%
 
-def preparation(data, train = False):
+def scrub_feature_engineering(data, train=False):
+    #system setup
+    BASE_DIR = os.path.dirname(os.getcwd())
+    RESOURCES_DIR = os.path.join(BASE_DIR, 'B_resources', 'b_Python_sklearn')
+
+    # Drop cp_data, without information
     data.drop(columns=['cp_data'], inplace=True)
+
+    # metadata definition
     data[['hospital_number', 'lesion_1', 'lesion_2', 'lesion_3']] = (
         data[['hospital_number', 'lesion_1', 'lesion_2', 'lesion_3']].astype(str))
     ohe_cols = data.select_dtypes(include=['object']).columns.to_list()
@@ -51,7 +59,7 @@ def preparation(data, train = False):
 
     # %% Codify lesions
 
-    data, ohe_cols, num_cols = lesion_treatment(data, ohe_cols, num_cols)
+    data, ohe_cols, num_cols = lesion_encode(data, ohe_cols, num_cols)
     ohe_cols = ohe_cols + ['lesionSite', 'lesionType', 'lesionSubType', 'lesionCode']
 
     # %% Coding hospital numbers
@@ -61,7 +69,7 @@ def preparation(data, train = False):
         hospital_number_codifier.columns = ["hospital_number", "freq"]
         hospital_number_codifier = hospital_number_codifier.sort_values(by="freq", ascending=False)
     else:
-        hospital_number_codifier = load('../resources/hospital_number_codifier_v0.1.joblib')
+        hospital_number_codifier = load(os.path.join(RESOURCES_DIR, 'hospital_number_codifier_v0.1.joblib'))
         mask = ~data['hospital_number'].isin(hospital_number_codifier['hospital_number'])
         data.loc[mask, 'hospital_number'] = hospital_number_codifier['hospital_number'].iloc[0]
 
@@ -72,7 +80,7 @@ def preparation(data, train = False):
         num_imputer = KNNImputer(n_neighbors=10)
         num_imputer.fit(data_numeric)
     else:
-        num_imputer = load('../resources/num_imputer_v0.1.joblib')
+        num_imputer = load(os.path.join(RESOURCES_DIR, 'num_imputer_v0.1.joblib'))
 
     data_numeric_imputed = num_imputer.transform(data_numeric)
     data_numeric_imputed_df = pd.DataFrame(data_numeric_imputed, columns=num_cols, index=data_numeric.index)
@@ -94,7 +102,7 @@ def preparation(data, train = False):
         ohe_imputer = SimpleImputer(strategy='most_frequent')
         ohe_imputer = ohe_imputer.fit(data_ohe)
     else:
-        ohe_imputer = load('../resources/ohe_imputer_v0.1.joblib')
+        ohe_imputer = load(os.path.join(RESOURCES_DIR, 'ohe_imputer_v0.1.joblib'))
 
     data_imputed = ohe_imputer.transform(data_ohe)
     data_imputed_pd = pd.DataFrame(data_imputed, columns=ohe_cols, index=data_ohe.index)
@@ -113,7 +121,7 @@ def preparation(data, train = False):
         ohe_encoder = OneHotEncoder(sparse_output=False)
         ohe_encoder = ohe_encoder.fit(data_ohe)
     else:
-        ohe_encoder = load('../resources/ohe_encoder_v0.1.joblib')
+        ohe_encoder = load(os.path.join(RESOURCES_DIR, 'ohe_encoder_v0.1.joblib'))
 
     data_encoded = ohe_encoder.transform(data_ohe)
     data_encoded_pd = pd.DataFrame(data_encoded, columns=ohe_encoder.get_feature_names_out(ohe_cols),
@@ -131,7 +139,7 @@ def preparation(data, train = False):
         drop_zv_transformer = DropConstantFeatures()
         drop_zv_transformer = drop_zv_transformer.fit(data_const)
     else:
-        drop_zv_transformer = load('../resources/drop_zv_transformer_v0.1.joblib')
+        drop_zv_transformer = load(os.path.join(RESOURCES_DIR, 'drop_zv_transformer_v0.1.joblib'))
 
     data_const_dropped = drop_zv_transformer.transform(data_const)
     data_zv_cols = data_const_dropped.columns.to_list()
@@ -145,7 +153,7 @@ def preparation(data, train = False):
         drop_corr_transformer = DropCorrelatedFeatures()
         drop_corr_transformer = drop_corr_transformer.fit(data_corr)
     else:
-        drop_corr_transformer = load('../resources/drop_corr_transformer_v0.1.joblib')
+        drop_corr_transformer = load(os.path.join(RESOURCES_DIR, 'drop_corr_transformer_v0.1.joblib'))
 
     data_corr_dropped = drop_corr_transformer.transform(data_corr)
     data = pd.concat([data.drop(columns=data_zv_cols), data_corr_dropped], axis=1)
@@ -160,7 +168,7 @@ def preparation(data, train = False):
         left_skewed_transformer = LogCpTransformer()
         left_skewed_transformer = left_skewed_transformer.fit(data_left_skewed)
     else:
-        left_skewed_transformer = load('../resources/left_skewed_transformer_v0.1.joblib')
+        left_skewed_transformer = load(os.path.join(RESOURCES_DIR, 'left_skewed_transformer_v0.1.joblib'))
 
     data_left_skewed_norm = left_skewed_transformer.transform(data_left_skewed)
     data = pd.concat([data.drop(columns=left_skewed), data_left_skewed_norm], axis=1)
@@ -173,7 +181,7 @@ def preparation(data, train = False):
         scaler_transformer = StandardScaler()
         scaler_transformer = scaler_transformer.fit(data_scale)
     else:
-        scaler_transformer = load('../resources/scaler_transformer_v0.1.joblib')
+        scaler_transformer = load(os.path.join(RESOURCES_DIR, 'scaler_transformer_v0.1.joblib'))
 
     data_scale_transformed = scaler_transformer.transform(data_scale)
     data_scale_transformed_pd = pd.DataFrame(data_scale_transformed,
@@ -195,13 +203,13 @@ def preparation(data, train = False):
 
     #%% Save resources
     if train:
-        dump(hospital_number_codifier, '../resources/hospital_number_codifier_v0.1.joblib')
-        dump(num_imputer, '../resources/num_imputer_v0.1.joblib')
-        dump(ohe_imputer, '../resources/ohe_imputer_v0.1.joblib')
-        dump(ohe_encoder, '../resources/ohe_encoder_v0.1.joblib')
-        dump(drop_zv_transformer, '../resources/drop_zv_transformer_v0.1.joblib')
-        dump(drop_corr_transformer, '../resources/drop_corr_transformer_v0.1.joblib')
-        dump(left_skewed_transformer, '../resources/left_skewed_transformer_v0.1.joblib')
-        dump(scaler_transformer, '../resources/scaler_transformer_v0.1.joblib')
+        dump(hospital_number_codifier, os.path.join(RESOURCES_DIR, 'hospital_number_codifier_v0.1.joblib'))
+        dump(num_imputer, os.path.join(RESOURCES_DIR, 'num_imputer_v0.1.joblib'))
+        dump(ohe_imputer, os.path.join(RESOURCES_DIR, 'ohe_imputer_v0.1.joblib'))
+        dump(ohe_encoder, os.path.join(RESOURCES_DIR, 'ohe_encoder_v0.1.joblib'))
+        dump(drop_zv_transformer, os.path.join(RESOURCES_DIR, 'drop_zv_transformer_v0.1.joblib'))
+        dump(drop_corr_transformer, os.path.join(RESOURCES_DIR, 'drop_corr_transformer_v0.1.joblib'))
+        dump(left_skewed_transformer, os.path.join(RESOURCES_DIR, 'left_skewed_transformer_v0.1.joblib'))
+        dump(scaler_transformer, os.path.join(RESOURCES_DIR, 'scaler_transformer_v0.1.joblib'))
 
     return data

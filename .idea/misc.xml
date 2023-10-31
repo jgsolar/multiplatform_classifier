@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="Black">
+    <option name="sdkName" value="Python 3.11 (Health_Horses_py)" />
+  </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.11 (Health_Horses_py)" project-jdk-type="Python SDK" />
   <component name="PyCharmDSProjectLayout">
     <option name="id" value="JupyterRightHiddenStructureLayout" />
   </component>
@@ -10,6 +14,13 @@
           <value>
             <RMarkdownRenderProfile>
               <option name="outputDirectoryUrl" value="file://$PROJECT_DIR$/02.data_engineering/01.R_tidy_models" />
+            </RMarkdownRenderProfile>
+          </value>
+        </entry>
+        <entry key="file://$PROJECT_DIR$/E_modeling/a_R_tidy_models_modeling.Rmd">
+          <value>
+            <RMarkdownRenderProfile>
+              <option name="outputDirectoryUrl" value="file://$PROJECT_DIR$/E_modeling" />
             </RMarkdownRenderProfile>
           </value>
         </entry>
