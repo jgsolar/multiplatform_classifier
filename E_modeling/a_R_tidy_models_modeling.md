@@ -1,11 +1,9 @@
----
-title: "Modeling with R Tidy Models"
-author: "João Gabriel Solar"
-date: "`r Sys.Date()`"
-output: github_document
----
+Modeling with R Tidy Models
+================
+João Gabriel Solar
+2023-10-31
 
-```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+``` r
 library(tidymodels)
 library(dplyr)
 library(bestNormalize)
@@ -37,9 +35,33 @@ source(here("C_scrub","a_R_tidy_verse_data_engineering.R"))
 
 # LOAD TRAINING DATA
 
-```{r}
+``` r
 data <- read_csv(here("A_data", "train.csv"))
+```
+
+    ## Rows: 1235 Columns: 29
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (17): surgery, age, temp_of_extremities, peripheral_pulse, mucous_membra...
+    ## dbl (12): id, hospital_number, rectal_temp, pulse, respiratory_rate, nasogas...
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
 data_orig <- read_csv(here("A_data", "horse.csv"))
+```
+
+    ## Rows: 299 Columns: 28
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (17): surgery, age, temp_of_extremities, peripheral_pulse, mucous_membra...
+    ## dbl (11): hospital_number, rectal_temp, pulse, respiratory_rate, nasogastric...
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
 data <- data %>% select(!c('id'))
 data <- data %>% rbind(data_orig)
 data <- data %>% drop_na('outcome')
@@ -48,16 +70,23 @@ rm(data_orig)
 
 # SCRUB DATA
 
-```{r}
+``` r
 data = scrub(data, train=TRUE)[[1]]
 ```
 
+    ## Warning in knnimp(x, k, maxmiss = rowmax, maxp = maxp): 23 rows with more than 50 % entries missing;
+    ##  mean imputation used for these rows
+
+    ## Cluster size 1511 broken into 694 817 
+    ## Done cluster 694 
+    ## Done cluster 817
+
 # PARAMETERS DEFINITION
 
-Preference to put customized options in the begining of the code, to help
-tuning adjustments
+Preference to put customized options in the begining of the code, to
+help tuning adjustments
 
-```{r}
+``` r
 random_seed = 9208
 split_size = 0.8
 folds_number = 4
@@ -74,11 +103,10 @@ preferred_metric = "f_meas"
   # f_meas
 ```
 
+Hyper parameter search grid size: Number of iterations based on the
+number of hyper tuning parameters
 
-Hyper parameter search grid size:
-Number of iterations based on the number of hyper tuning parameters
-
-```{r}
+``` r
 lda_grid_size <- 1*20
 qda_grid_size <- 1*20
 rda_grid_size <- 2*20
@@ -102,7 +130,7 @@ svmRadial_grid_size <- 3*20
 
 # SYSTEM SETTINGS
 
-```{r}
+``` r
 # Prepare for parallel processing
 all_cores <- parallel::detectCores()
 doParallel::registerDoParallel(cores = all_cores)
@@ -110,7 +138,7 @@ doParallel::registerDoParallel(cores = all_cores)
 
 # SPLIT DATA
 
-```{r}
+``` r
 # create split
 set.seed(random_seed)
 data_split <- initial_split(data, prop = split_size, strata = outcome)
@@ -129,23 +157,40 @@ train %>%
     n = n(),
     perc = n/nrow(.)
   )
+```
 
+    ## # A tibble: 3 × 3
+    ##   outcome     n  perc
+    ##   <fct>   <int> <dbl>
+    ## 1 2         388 0.317
+    ## 2 1         236 0.193
+    ## 3 0         600 0.490
+
+``` r
 test %>%
   group_by(outcome) %>%
   summarise(
     n = n(),
     perc = n/nrow(.)
   )
+```
 
+    ## # A tibble: 3 × 3
+    ##   outcome     n  perc
+    ##   <fct>   <int> <dbl>
+    ## 1 2          98 0.318
+    ## 2 1          59 0.192
+    ## 3 0         151 0.490
+
+``` r
 # create data folds for cross validation
 myFolds <- vfold_cv(train, repeats = folds_number,
                     strata = outcome)
-
 ```
 
 # FEATURE ENGINEERING
 
-```{r}
+``` r
 data_recipe <- train %>%
   recipe(outcome ~ .) %>%
   step_impute_mode(all_nominal_predictors()) %>% 
@@ -161,7 +206,7 @@ data_recipe <- train %>%
 
 ## create model-specific specs
 
-```{r}
+``` r
 lda_spec <- 
   parsnip::discrim_linear(regularization_method = tune()) %>% 
   set_engine("sparsediscrim") %>% 
@@ -313,10 +358,9 @@ svmRadial_spec <-
   set_mode("classification")
 ```
 
-
 ## create model-specific parameters
 
-```{r}
+``` r
 lda_params <- 
   dials::parameters(list(
     regularization_method()
@@ -446,7 +490,7 @@ svmRadial_params <-
 
 ## Generate irregular grids
 
-```{r}
+``` r
 lda_grid <- grid_latin_hypercube(lda_params,
                                  size = lda_grid_size
 )
@@ -520,10 +564,9 @@ svmRadial_grid <- grid_latin_hypercube(svmRadial_params,
 )
 ```
 
-
 ## create a workflow SET
 
-```{r, warning=FALSE}
+``` r
 #Define which models will be trained
 training_models <- list(
   # lda = lda_spec,
@@ -574,10 +617,19 @@ my_models <-
 my_models
 ```
 
+    ## # A workflow set/tibble: 6 × 4
+    ##   wflow_id          info             option    result    
+    ##   <chr>             <list>           <list>    <list>    
+    ## 1 recipe_bagTree    <tibble [1 × 4]> <opts[1]> <list [0]>
+    ## 2 recipe_xgboost    <tibble [1 × 4]> <opts[1]> <list [0]>
+    ## 3 recipe_randForest <tibble [1 × 4]> <opts[1]> <list [0]>
+    ## 4 recipe_logistReg  <tibble [1 × 4]> <opts[1]> <list [0]>
+    ## 5 recipe_svmLinear  <tibble [1 × 4]> <opts[1]> <list [0]>
+    ## 6 recipe_svmPoly    <tibble [1 × 4]> <opts[1]> <list [0]>
 
 ## create custom metrics
 
-```{r}
+``` r
 data_metrics <- metric_set(yardstick::sensitivity,
                            yardstick::specificity,
                            yardstick::precision,
@@ -585,13 +637,11 @@ data_metrics <- metric_set(yardstick::sensitivity,
                            yardstick::roc_auc,
                            yardstick::mcc,
                            yardstick::f_meas)
-
 ```
-
 
 ## actual tuning
 
-```{r}
+``` r
 system.time ({
   model_race <- my_models %>% 
     workflow_map("tune_grid", resamples = myFolds, verbose = TRUE,
@@ -600,32 +650,77 @@ system.time ({
 })
 ```
 
+    ## i 1 of 6 tuning:     recipe_bagTree
+
+    ## ✔ 1 of 6 tuning:     recipe_bagTree (4m 21.9s)
+
+    ## i 2 of 6 tuning:     recipe_xgboost
+
+    ## ✔ 2 of 6 tuning:     recipe_xgboost (14m 52.7s)
+
+    ## i 3 of 6 tuning:     recipe_randForest
+
+    ## ✔ 3 of 6 tuning:     recipe_randForest (15m 11.8s)
+
+    ## i 4 of 6 tuning:     recipe_logistReg
+
+    ## ✔ 4 of 6 tuning:     recipe_logistReg (4m 17s)
+
+    ## i 5 of 6 tuning:     recipe_svmLinear
+
+    ## ✔ 5 of 6 tuning:     recipe_svmLinear (1m 21.6s)
+
+    ## i 6 of 6 tuning:     recipe_svmPoly
+
+    ## ✔ 6 of 6 tuning:     recipe_svmPoly (4m 0.8s)
+
+    ##   usuário   sistema decorrido 
+    ## 99313.057  1621.322  2650.029
 
 # Performance evaluation and selection of the best model
 
 ## MODEL COMPARISON
 
-```{r}
+``` r
 # show metrics for the models
 model_race %>% collect_metrics(metrics = data_metrics) %>%
   group_by(wflow_id)
+```
 
+    ## # A tibble: 3,045 × 9
+    ## # Groups:   wflow_id [6]
+    ##    wflow_id       .config   preproc model .metric .estimator  mean     n std_err
+    ##    <chr>          <chr>     <chr>   <chr> <chr>   <chr>      <dbl> <int>   <dbl>
+    ##  1 recipe_bagTree Preproce… recipe  bag_… bal_ac… macro      0.747    40 0.00485
+    ##  2 recipe_bagTree Preproce… recipe  bag_… f_meas  macro      0.641    40 0.00679
+    ##  3 recipe_bagTree Preproce… recipe  bag_… mcc     multiclass 0.477    40 0.0102 
+    ##  4 recipe_bagTree Preproce… recipe  bag_… precis… macro      0.641    40 0.00675
+    ##  5 recipe_bagTree Preproce… recipe  bag_… roc_auc hand_till  0.833    40 0.00443
+    ##  6 recipe_bagTree Preproce… recipe  bag_… sensit… macro      0.667    40 0.00637
+    ##  7 recipe_bagTree Preproce… recipe  bag_… specif… macro      0.827    40 0.00356
+    ##  8 recipe_bagTree Preproce… recipe  bag_… bal_ac… macro      0.749    40 0.00415
+    ##  9 recipe_bagTree Preproce… recipe  bag_… f_meas  macro      0.644    40 0.00550
+    ## 10 recipe_bagTree Preproce… recipe  bag_… mcc     multiclass 0.481    40 0.00851
+    ## # ℹ 3,035 more rows
 
+``` r
 # show performance of competing models
 autoplot(model_race, select_best = TRUE, rank_metric = preferred_metric)
 ```
 
+![](a_R_tidy_models_modeling_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
 Comparing metrics, xgboost is the best suitable technique.
 
 Definition of selected technique:
-```{r}
+
+``` r
 selectedModel = "recipe_xgboost"
 ```
 
-
 ## MODEL FINALIZATION
 
-```{r}
+``` r
 # combine parameter combinations with metrics and predictions
 results <- model_race %>% 
   extract_workflow_set_result(selectedModel)
@@ -647,8 +742,20 @@ tree_res_results <- tree_wkfl %>%
 
 # get metrics of training folds
 collect_metrics(tree_res_results)
+```
 
+    ## # A tibble: 7 × 6
+    ##   .metric      .estimator  mean     n std_err .config             
+    ##   <chr>        <chr>      <dbl> <int>   <dbl> <chr>               
+    ## 1 bal_accuracy macro      0.789    40 0.00462 Preprocessor1_Model1
+    ## 2 f_meas       macro      0.701    40 0.00590 Preprocessor1_Model1
+    ## 3 mcc          multiclass 0.564    40 0.00944 Preprocessor1_Model1
+    ## 4 precision    macro      0.698    40 0.00582 Preprocessor1_Model1
+    ## 5 roc_auc      hand_till  0.878    40 0.00386 Preprocessor1_Model1
+    ## 6 sensitivity  macro      0.719    40 0.00611 Preprocessor1_Model1
+    ## 7 specificity  macro      0.858    40 0.00333 Preprocessor1_Model1
 
+``` r
 # train on training data and test on test data
 tree_final <- tree_wkfl %>%
   last_fit(split = data_split, 
@@ -656,13 +763,26 @@ tree_final <- tree_wkfl %>%
            control = control_last_fit(allow_par = TRUE)) 
 ```
 
-
 ## PREDICTIONS & CONFUSION MATRIX
 
-```{r}
+``` r
 # get performance metrics on test data in last_fit object
 tree_final$.metrics
+```
 
+    ## [[1]]
+    ## # A tibble: 7 × 4
+    ##   .metric      .estimator .estimate .config             
+    ##   <chr>        <chr>          <dbl> <chr>               
+    ## 1 sensitivity  macro          0.753 Preprocessor1_Model1
+    ## 2 specificity  macro          0.869 Preprocessor1_Model1
+    ## 3 precision    macro          0.729 Preprocessor1_Model1
+    ## 4 bal_accuracy macro          0.811 Preprocessor1_Model1
+    ## 5 mcc          multiclass     0.602 Preprocessor1_Model1
+    ## 6 f_meas       macro          0.732 Preprocessor1_Model1
+    ## 7 roc_auc      hand_till      0.885 Preprocessor1_Model1
+
+``` r
 # create fit object on training data
 tree_fit <- fit(tree_wkfl, train)
 
@@ -678,7 +798,11 @@ cm_train <- conf_mat(tree_train_pred,
 cm_train <- as_tibble(cm_train$table)
 colnames(cm_train)=c("Prediction", "Target", "N")
 cvms::plot_confusion_matrix(cm_train)
+```
 
+![](a_R_tidy_models_modeling_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+``` r
 # create confusion matrix on test data
 cm_test <- conf_mat(tree_final$.predictions[[1]], 
                     truth = outcome,
@@ -689,9 +813,11 @@ colnames(cm_test)=c("Prediction", "Target", "N")
 cvms::plot_confusion_matrix(cm_test)
 ```
 
+![](a_R_tidy_models_modeling_files/figure-gfm/unnamed-chunk-18-2.png)<!-- -->
+
 ## PERFORMANCE VISUALIZATIONS
 
-```{r}
+``` r
 # plot predictions
 data.frame(tree_final$.predictions) %>%
   ggplot() +
@@ -702,12 +828,10 @@ data.frame(tree_final$.predictions) %>%
   theme_bw()
 ```
 
+![](a_R_tidy_models_modeling_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
 # Save selected model
 
-```{r}
+``` r
 saveRDS(tree_fit, here("B_resources", "a_R", "modelXGBoost.rds"))
 ```
-
-  
-
-
