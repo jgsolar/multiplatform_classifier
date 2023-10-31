@@ -4,3 +4,4 @@
 .Ruserdata
 .idea/misc.xml
 .idea/multiplatform_classifier.iml
+*.log
