@@ -32,14 +32,14 @@ library(doParallel)
 select <- dplyr::select  # select is masked by some libraries
 
 library(here)
-source(here("03.scrub","01.R_tidy_verse_data_engineering.R"))
+source(here("C_scrub","a_R_tidy_verse_data_engineering.R"))
 ```
 
 # LOAD TRAINING DATA
 
 ```{r}
-data <- read_csv(here("01.data", "train.csv"))
-data_orig <- read_csv(here("01.data", "horse.csv"))
+data <- read_csv(here("A_data", "train.csv"))
+data_orig <- read_csv(here("A_data", "horse.csv"))
 data <- data %>% select(!c('id'))
 data <- data %>% rbind(data_orig)
 data <- data %>% drop_na('outcome')
@@ -705,7 +705,7 @@ data.frame(tree_final$.predictions) %>%
 # Save selected model
 
 ```{r}
-saveRDS(tree_fit, here("02.resources", "01.R", "modelXGBoost.rds"))
+saveRDS(tree_fit, here("B_resources", "a_R", "modelXGBoost.rds"))
 ```
 
   

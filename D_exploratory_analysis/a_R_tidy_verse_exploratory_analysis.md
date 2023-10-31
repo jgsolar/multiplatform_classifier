@@ -8,7 +8,7 @@ João Gabriel Solar
 ``` r
 library(tidyverse)
 library(here)
-source(here("03.scrub","01.R_tidy_verse_data_engineering.R"))
+source(here("C_scrub","a_R_tidy_verse_data_engineering.R"))
 ```
 
 ## Collect data
@@ -18,8 +18,8 @@ To increment available data, I’m including
 in the training set.
 
 ``` r
-data <- read_csv("../01.data/original/train.csv")
-data_orig <- read_csv("../01.data/original/horse.csv")
+data <- read_csv(here("A_data", "train.csv"))
+data_orig <- read_csv(here("A_data", "horse.csv"))
 data <- data %>% select(!c('id'))
 data <- data %>% rbind(data_orig)
 data <- data %>% drop_na('outcome')
@@ -135,7 +135,7 @@ cleaning before proceeding with exploratory analysis.
 ``` r
 data <- data %>%
   mutate_if(is.factor, as.character)  # revertion of previous operation
-results = scrub(data)
+results = scrub(data, train=TRUE)
 data <- results[[1]]
 metadata <- results [[2]]
 rm(results)
@@ -170,7 +170,7 @@ for (hist in histograms) {
 }
 ```
 
-![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-4.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-5.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-6.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-7.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-8.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-9.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-10.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-11.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-12.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-13.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-14.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-15.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-16.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-17.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-18.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-19.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-20.png)<!-- -->![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-21.png)<!-- -->
+![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-4.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-5.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-6.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-7.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-8.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-9.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-10.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-11.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-12.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-13.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-14.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-15.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-16.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-17.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-18.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-19.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-20.png)<!-- -->![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-5-21.png)<!-- -->
 
 ``` r
 rm(data_temp, outcome)
@@ -196,35 +196,35 @@ for (hist in histograms) {
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
+![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->
+![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-4.png)<!-- -->
+![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-4.png)<!-- -->
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-5.png)<!-- -->
+![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-5.png)<!-- -->
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-6.png)<!-- -->
+![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-6.png)<!-- -->
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-7.png)<!-- -->
+![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-7.png)<!-- -->
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-8.png)<!-- -->
+![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-6-8.png)<!-- -->
 
 By the distribution of histogram, the variables `abdomo_protein`,
 `pulse`, `respiratory_rate`, `total_protein` are left skewed. When
@@ -253,7 +253,7 @@ ggplot(matrix_cor_melt, aes(x = Var1, y = Var2, fill = value)) +
   labs(title = "Correlation Matrix")
 ```
 
-![](01.R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](a_R_tidy_verse_exploratory_analysis_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 Any variable were found with great correlation with the outcome. I
 decided not to remove any variables, even if they have a low correlation

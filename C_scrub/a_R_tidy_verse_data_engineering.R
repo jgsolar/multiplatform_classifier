@@ -2,7 +2,7 @@ library(tidyverse)
 library(impute)
 select <- dplyr::select  # select is masked by some libraries
 library(here)
-source(here("02.resources","01.R","lesion_encoder.R"))
+source(here("B_resources","a_R","lesion_encoder.R"))
 
 scrub <- function(data, train=FALSE){
   # get metadata
@@ -42,7 +42,7 @@ scrub <- function(data, train=FALSE){
            )
   
   # Adjust lesion encoding
-  result <- lesionPrep(data, num_cols)
+  result <- lesion_encode(data, num_cols)
   data <- result[[1]]
   num_cols <- result[[2]]
   cat_cols <- c(cat_cols, "lesionSite", "lesionType", "lesionSubType", "lesionCode")
@@ -53,7 +53,7 @@ scrub <- function(data, train=FALSE){
     colnames(hospital_number_codifier) <- c("hospital_number", "freq")
     hospital_number_codifier <- hospital_number_codifier %>% arrange(desc(freq))
   } else {
-    hospital_number_codifier <- readRDS("02.resources/01.R/hospital_number_codifier_v0.1.rds")
+    hospital_number_codifier <- readRDS("B_resources/a_R/hospital_number_codifier_v0.1.rds")
     data$hospital_number <- ifelse(data$hospital_number %in% hospital_number_codifier[[1]], 
                                    data$hospital_number, as.character(hospital_number_codifier[[1]][1]))
   }
@@ -86,7 +86,7 @@ scrub <- function(data, train=FALSE){
   
   # Save hospital_number_codifier for using during test set cleaning
   if (train==TRUE)
-    write_rds(hospital_number_codifier, here("02.resources","01.R","hospital_number_codifier_v0.1.rds"))
+    write_rds(hospital_number_codifier, here("B_resources", "a_R", "hospital_number_codifier_v0.1.rds"))
   
   # Code outcome variable for model tuning
   if (train==TRUE){

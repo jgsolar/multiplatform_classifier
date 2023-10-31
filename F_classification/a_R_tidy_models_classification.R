@@ -2,19 +2,19 @@ library(tidyverse)
 library(tidymodels)
 library(here)
 
-source(here("03.scrub","01.R_tidy_verse_data_engineering.R"))
+source(here("C_scrub","a_R_tidy_verse_data_engineering.R"))
 
 
 
 # Collect classification data ---------------------------------------------
 
-data <- read_csv(here("01.data", "test.csv"))
+data <- read_csv(here("A_data", "test.csv"))
 data = scrub(data, train=FALSE)[[1]]
 
 # Classification ----------------------------------------------------------
 id = data$id
 data <- data %>% select(!c('id'))
-model <- readRDS(here("02.resources", "01.R", "modelXGBoost.rds"))
+model <- readRDS(here("B_resources", "a_R", "modelXGBoost_saved.rds"))
 predicted <- predict(model, data)
 
 
@@ -34,7 +34,7 @@ colnames(result_table) <- c("id", "outcome")
 # Save result -------------------------------------------------------------
 
 
-write.csv(result_table, file = here("08.results", "01.R_tidy_models_output.csv"), 
+write.csv(result_table, file = here("G_results", "a_R_tidy_models_output.csv"), 
           row.names = FALSE, quote = FALSE)
 
 

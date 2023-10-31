@@ -9,7 +9,7 @@ output: github_document
 ```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
 library(tidyverse)
 library(here)
-source(here("03.scrub","01.R_tidy_verse_data_engineering.R"))
+source(here("C_scrub","a_R_tidy_verse_data_engineering.R"))
 ```
 
 ## Collect data
@@ -18,8 +18,8 @@ To increment available data, I'm including
 in the training set.
 
 ```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
-data <- read_csv(here("01.data", "train.csv"))
-data_orig <- read_csv(here("01.data", "horse.csv"))
+data <- read_csv(here("A_data", "train.csv"))
+data_orig <- read_csv(here("A_data", "horse.csv"))
 data <- data %>% select(!c('id'))
 data <- data %>% rbind(data_orig)
 data <- data %>% drop_na('outcome')
