@@ -1,0 +1,167 @@
+---
+title: "Exploratory analysis"
+author: "João Gabriel Solar"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+## Load libraries and functions
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+library(tidyverse)
+library(gridExtra)
+library(reshape2)
+library(ggplot2)
+library(plotly)
+library(here)
+source(here("03.scrub","01.R_tidy_verse_data_engineering.R"))
+```
+
+## Collect data
+To increment available data, I'm including 
+[horse-survival-dataset](https://www.kaggle.com/datasets/yasserh/horse-survival-dataset)
+in the training set.
+
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+data <- read_csv("../01.data/original/train.csv")
+data_orig <- read_csv("../01.data/original/horse.csv")
+data <- data %>% select(!c('id'))
+data <- data %>% rbind(data_orig)
+data <- data %>% drop_na('outcome')
+rm(data_orig)
+```
+
+## Attributes analysis
+To evaluate data tidiness, I'm using [horse-survival-dataset](https://www.kaggle.com/datasets/yasserh/horse-survival-dataset)
+features specifications.
+
+
+```{r}
+data <- data %>%
+  mutate_if(is.character, as.factor)
+
+summary(data)
+```
+There are several categorical attributes with wrong coding. I did not find any 
+anomalies in the quantitative attributes. `cp_data` doesn't have any relevant
+information, according to reference [horse-survival-dataset](https://www.kaggle.com/datasets/yasserh/horse-survival-dataset)
+and will be removed.
+
+## Lesions codification
+
+The lesion code doesn't respect normal form and must be separated. I'm using the
+following criteria to address this separation:
+1. Counting the number of lesions and recording it in a new feature `numLesions`.  
+2. During the process, I observed that a few horses had more than one lesion.
+Specifically, eight horses had two, and only two had three lesions. To simplify 
+the analysis, I chose to consider only one lesion per horse, selecting the lesion
+with the highest `lesionSite` code. (This strategy couldn't be applied in all
+platforms, given the limitation and restrictions founded)  
+3. This approach simplified feature engineering process, especially considering
+the short data available.  
+4. Finally, I decoded the lesions into five different variables: `numLesions`,
+`lesionSite`, `lesionType`, `lesionSubType` and `lesionCode`, each of them 
+representing one dimension of lesion encoded.
+
+## Data cleaning
+
+For better comprehension of data characteristics, I'll perform with data 
+cleaning before proceeding with exploratory analysis.
+
+```{r, results='hide', message=FALSE, warning=FALSE}
+data <- data %>%
+  mutate_if(is.factor, as.character)  # revertion of previous operation
+results = scrub(data)
+data <- results[[1]]
+metadata <- results [[2]]
+rm(results)
+```
+
+
+## Exploratory analysis
+
+Attributes histogram analysis:
+```{r, echo=TRUE, results='hold', message=FALSE, warning=FALSE}
+outcome = data['outcome']
+outcome <- outcome %>% mutate(outcome =
+                              gsub("2", "died", outcome))
+outcome <- outcome %>% mutate(outcome =
+                          gsub("1", "euthanized", outcome))
+outcome <- outcome %>% mutate(outcome =
+                          gsub("0", "lived", outcome))
+
+cat_cols <- metadata$cat_cols
+data_temp <- data[cat_cols]
+
+data_temp['outcome'] <- outcome
+
+histograms <- lapply(names(data_temp), function(var_name) {
+  p <- ggplot(data_temp, aes(x = .data[[var_name]])) +
+    geom_bar() +
+    labs(title = var_name)
+  ggplotly(p)
+})
+
+for (hist in histograms) {
+  print(hist)
+}
+
+rm(data_temp, outcome)
+```
+
+There are imbalanced data in categorical attributes, but I'll keep them as
+presented originally. The outcome variable, when possible, will pass 
+through a down sample process to balance it.
+
+```{r}
+num_cols <- metadata$num_cols
+
+histograms <- lapply(names(data[c(num_cols)]), function(var_name) {
+  p <- ggplot(data, aes(x = .data[[var_name]])) +
+    geom_histogram() +
+    labs(title = var_name)
+  ggplotly(p)
+})
+
+for (hist in histograms) {
+  print(hist)
+}
+```
+
+
+
+By the distribution of histogram, the variables `abdomo_protein`, `pulse`, 
+`respiratory_rate`, `total_protein` are left skewed. When possible, they will 
+be treated in the pipeline. In tidy models, as an ORQ Normalization 
+(step_orderNorm) is available, all numerical attributes will pass through it.
+
+```{r}
+left_skewed = c('abdomo_protein', 'pulse', 'respiratory_rate',
+               'total_protein')
+```
+
+
+```{r, echo=TRUE, results='hold', message=FALSE, warning=FALSE}
+
+outcome <- data$outcome %>% as.numeric()
+data_num <- cbind(data[c(num_cols)], outcome)
+
+# Correlation verification
+matrix_cor <- cor(data_num[, 1:ncol(data_num)], use = "complete.obs")
+
+# Check correlation through heatmap
+matrix_cor_melt <- reshape2::melt(matrix_cor)
+ggplot(matrix_cor_melt, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Correlation Matrix")
+```
+
+Any variable were found with great correlation with the outcome. I decided 
+not to remove any variables, even if they have a low correlation with 
+the outcome, because combined variables can be significant, even if they aren't
+individually significant. Variables with high correlation with each other
+will be removed in the pipeline.
+
+
+
