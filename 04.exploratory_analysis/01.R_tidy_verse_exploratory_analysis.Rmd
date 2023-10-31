@@ -8,10 +8,6 @@ output: github_document
 ## Load libraries and functions
 ```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
 library(tidyverse)
-library(gridExtra)
-library(reshape2)
-library(ggplot2)
-library(plotly)
 library(here)
 source(here("03.scrub","01.R_tidy_verse_data_engineering.R"))
 ```
@@ -79,8 +75,9 @@ rm(results)
 
 ## Exploratory analysis
 
-Attributes histogram analysis:
-```{r, echo=TRUE, results='hold', message=FALSE, warning=FALSE}
+Categorical attributes histogram analysis:
+
+```{r, echo=TRUE, results='hold', message=FALSE, warning=FALSE, fig.keep="all"}
 outcome = data['outcome']
 outcome <- outcome %>% mutate(outcome =
                               gsub("2", "died", outcome))
@@ -98,7 +95,6 @@ histograms <- lapply(names(data_temp), function(var_name) {
   p <- ggplot(data_temp, aes(x = .data[[var_name]])) +
     geom_bar() +
     labs(title = var_name)
-  ggplotly(p)
 })
 
 for (hist in histograms) {
@@ -112,14 +108,13 @@ There are imbalanced data in categorical attributes, but I'll keep them as
 presented originally. The outcome variable, when possible, will pass 
 through a down sample process to balance it.
 
-```{r}
+```{r, fig.keep="all"}
 num_cols <- metadata$num_cols
 
 histograms <- lapply(names(data[c(num_cols)]), function(var_name) {
   p <- ggplot(data, aes(x = .data[[var_name]])) +
     geom_histogram() +
     labs(title = var_name)
-  ggplotly(p)
 })
 
 for (hist in histograms) {
@@ -140,7 +135,7 @@ left_skewed = c('abdomo_protein', 'pulse', 'respiratory_rate',
 ```
 
 
-```{r, echo=TRUE, results='hold', message=FALSE, warning=FALSE}
+```{r, echo=TRUE, results='hold', message=FALSE, warning=FALSE, fig.keep="all"}
 
 outcome <- data$outcome %>% as.numeric()
 data_num <- cbind(data[c(num_cols)], outcome)
