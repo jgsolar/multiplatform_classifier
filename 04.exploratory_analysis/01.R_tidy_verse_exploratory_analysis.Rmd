@@ -18,8 +18,8 @@ To increment available data, I'm including
 in the training set.
 
 ```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
-data <- read_csv("../01.data/original/train.csv")
-data_orig <- read_csv("../01.data/original/horse.csv")
+data <- read_csv(here("01.data", "train.csv"))
+data_orig <- read_csv(here("01.data", "horse.csv"))
 data <- data %>% select(!c('id'))
 data <- data %>% rbind(data_orig)
 data <- data %>% drop_na('outcome')
@@ -66,7 +66,7 @@ cleaning before proceeding with exploratory analysis.
 ```{r, results='hide', message=FALSE, warning=FALSE}
 data <- data %>%
   mutate_if(is.factor, as.character)  # revertion of previous operation
-results = scrub(data)
+results = scrub(data, train=TRUE)
 data <- results[[1]]
 metadata <- results [[2]]
 rm(results)

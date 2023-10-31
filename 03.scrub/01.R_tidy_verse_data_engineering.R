@@ -1,10 +1,10 @@
 library(tidyverse)
 library(impute)
+select <- dplyr::select  # select is masked by some libraries
 library(here)
-
 source(here("02.resources","01.R","lesion_encoder.R"))
 
-scrub <- function(data, train=TRUE){
+scrub <- function(data, train=FALSE){
   # get metadata
   data <- data %>% 
     mutate_at(c("hospital_number"), as.character)

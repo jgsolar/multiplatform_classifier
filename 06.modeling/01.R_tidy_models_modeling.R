@@ -1,4 +1,5 @@
 library(tidymodels)
+library(dplyr)
 library(bestNormalize)
 library(workflowsets)
 library(baguette) # bagTree
@@ -20,8 +21,27 @@ library(ggimage) #Needed by cvms::plot_confusion_matrix
 library(rsvg) #Needed by cvms::plot_confusion_matrix
 library(parallel)
 library(doParallel)
-library(dplyr)
+select <- dplyr::select  # select is masked by some libraries
 
+library(here)
+source(here("03.scrub","01.R_tidy_verse_data_engineering.R"))
+
+#-------------------------------------------------------------------------------
+# LOAD TRAINING DATA
+#-------------------------------------------------------------------------------
+
+data <- read_csv(here("01.data", "train.csv"))
+data_orig <- read_csv(here("01.data", "horse.csv"))
+data <- data %>% select(!c('id'))
+data <- data %>% rbind(data_orig)
+data <- data %>% drop_na('outcome')
+rm(data_orig)
+
+#-------------------------------------------------------------------------------
+# SCRUB DATA
+#-------------------------------------------------------------------------------
+
+data = scrub(data, train=TRUE)[[1]]
 
 #-------------------------------------------------------------------------------
 # PARAMETERS DEFINITION
@@ -60,7 +80,7 @@ tree_grid_size <- 3^3
 # bagTree_grid_size <- 3^4  # Binary
 bagTree_grid_size <- 3^3  # Multiclass
 boostTree_grid_size <- 3^3
-xgboost_grid_size <- 3^2  
+xgboost_grid_size <- 3^8  
 randForest_grid_size <- 3^3
 mars_grid_size <- 3^3
 bagMars_grid_size <- 3^3
@@ -81,12 +101,8 @@ all_cores <- parallel::detectCores()
 doParallel::registerDoParallel(cores = all_cores)
 
 #-------------------------------------------------------------------------------
-# DATA PREPARATION
+# SPLIT DATA
 #-------------------------------------------------------------------------------
-
-# get data
-data <-  readRDS("01.data/processed/01.R/dataPrepared.rds")
-metadata <- readRDS("01.data/processed/01.R/metadata.rds")
 
 # create split
 set.seed(random_seed)
@@ -120,7 +136,7 @@ myFolds <- vfold_cv(train, repeats = folds_number,
 
 
 #-------------------------------------------------------------------------------
-# FEATURE PREPROCESSING
+# FEATURE ENGINEERING
 #-------------------------------------------------------------------------------
 
 data_recipe <- train %>%
@@ -510,18 +526,18 @@ training_models <- list(
   # rda = rda_spec,
   # fda = fda_spec,
   # tree = tree_spec,
-  # bagTree = bagTree_spec,
+  bagTree = bagTree_spec,
   # boostTree = boostTree_spec,
-  xgboost = xgboost_spec
-  # randForest = randForest_spec,
+  xgboost = xgboost_spec,
+  randForest = randForest_spec,
   # mars = mars_spec,
   # bagMars = bagMars_spec,
   # naiveBayes = naiveBayes_spec,
   # bart = bart_spec,
   # c5rules = c5rules_spec,
-  # logistReg = logistReg_spec,
-  # svmLinear = svmLinear_spec,
-  # svmPoly = svmPoly_spec
+  logistReg = logistReg_spec,
+  svmLinear = svmLinear_spec,
+  svmPoly = svmPoly_spec
   # svmRadial = svmRadial_spec
 )
 
@@ -684,7 +700,9 @@ data.frame(tree_final$.predictions) %>%
 # Save selected model
 #-------------------------------------------------------------------------------
 
-saveRDS(tree_fit, "02.resources/01.R/modelXGBoost.rds")
+
+
+saveRDS(tree_fit, here("02.resources", "01.R", "modelXGBoost.rds"))
   
 
 

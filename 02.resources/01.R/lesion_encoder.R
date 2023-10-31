@@ -1,3 +1,5 @@
+select <- dplyr::select  # select is masked by some libraries
+
 lesionPrep <- function(data, non_ohe_cols) {
   
   data$lesion_1 <- data$lesion_1 %>% as.character()
