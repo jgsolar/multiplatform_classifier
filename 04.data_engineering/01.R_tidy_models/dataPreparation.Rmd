@@ -1,0 +1,331 @@
+---
+title: "Data Preparation Script"
+author: "JGSOLAR"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+## Load libraries and functions
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+library(tidyverse)
+library(dplyr)
+library(gridExtra)
+library(reshape2)
+library(ggplot2)
+library(plotly)
+library(impute)
+```
+
+## Collect data
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+data <- read_csv("../../01.data/original/train.csv")
+data_orig <- read_csv("../../01.data/original/horse.csv")
+data <- data %>% select(-c("id"))
+data <- data %>% rbind(data_orig)
+data <- data %>% drop_na('outcome')
+
+data$hospital_number <- as.character(data$hospital_number)
+ohe_cols <- c("hospital_number", "mucous_membrane", "pain", "abdomen", 
+              "abdomo_appearance", "lesionSite", "lesionType", "lesionSubType",
+              "lesionCode", "surgery", "surgical_lesion", "age", "peristalsis", 
+              "abdominal_distention", "nasogastric_tube", "rectal_exam_feces",
+              "nasogastric_reflux", "capillary_refill_time", "peripheral_pulse",
+              "temp_of_extremities")
+non_ohe_cols <- setdiff(names(data), ohe_cols)
+non_ohe_cols <- non_ohe_cols[non_ohe_cols != 'outcome']
+```
+
+## Analyse attributes
+```{r}
+data <- data %>%
+  mutate_if(is.character, as.factor)
+
+summary(data)
+```
+There are several attributes with unencoded data, particularly in the 
+categorical ones. Afterwards, we address these unexpected values.
+
+I did not find any anomalies in the quantitative attributes.
+
+## Clean data
+```{r, echo=TRUE, results='hold', message=FALSE, warning=FALSE}
+
+data <- data %>%
+  mutate_if(is.factor, as.character)
+
+data <- data %>%
+  mutate(abdominal_distention = gsub("None", "none", abdominal_distention),
+         nasogastric_tube = gsub("None", "none", nasogastric_tube),
+         nasogastric_reflux = gsub("None", "none", nasogastric_reflux),
+         temp_of_extremities = gsub("None", "normal", temp_of_extremities),
+         peripheral_pulse = gsub("None", "normal", peripheral_pulse),
+         mucous_membrane = gsub("None", "normal_pink", mucous_membrane),
+         capillary_refill_time = gsub("None", "less_3_sec", 
+                                      capillary_refill_time),
+         capillary_refill_time = str_replace(capillary_refill_time, "^3$", 
+                                             "less_3_sec"),
+         pain = gsub("None", "alert", pain),
+         pain = gsub("moderate", "mild_pain", pain),
+         pain = gsub("slight", "alert", pain),
+         peristalsis = gsub("distend_small", "normal", peristalsis),
+         peristalsis = gsub("None", "normal", peristalsis),
+         nasogastric_reflux = gsub("slight", "none", nasogastric_reflux),
+         rectal_exam_feces = gsub("None", "normal", rectal_exam_feces),
+         rectal_exam_feces = gsub("serosanguious", "normal", rectal_exam_feces),
+         abdomen = gsub("None", "normal", abdomen),
+         abdomo_appearance = gsub("None", "clear", abdomo_appearance))
+
+data <- data %>%
+  mutate_if(is.character, as.factor)
+
+summary(data)
+```
+
+## Codify lesions
+
+To address the codification of lesions, I implemented the following strategy:  
+1. Counting the number of lesions and recording it in a new feature `numLesions`.  
+2. During the process, I observed that a few horses had more than one lesion.
+Specefically, eight horses had two, and only two had three lesions. To simplify 
+the analysis, I chose to consider only one lesion per horse, selecting the lesion
+with the highest `lesionSite` code.  
+3. This approach streamlined the data modeling process, especially considering
+the limited data available for modeling multidimensional lesion variables 
+involving concomitant lesions.  
+4. Finally, I decoded the lesions into five different variables: `numLesions`,
+`lesionSite`, `lesionType`, `lesionSubType` and `lesionCode`.
+
+```{r}
+data[c("lesion_1", "lesion_2", "lesion_3")] <- 
+  lapply(data[c("lesion_1", "lesion_2", "lesion_3")], as.character)
+
+data$numLesions <- rowSums(data[c("lesion_1", "lesion_2", "lesion_3")] != "0")
+
+data$lesionSite <-  -1
+data$lesionType <- -1
+data$lesionSubType <- -1
+data$lesionCode <- -1
+
+non_ohe_cols <-  c(non_ohe_cols, 'numLesions')
+
+for (i in 1:nrow(data)){
+  for (j in c("lesion_1", "lesion_2", "lesion_3")){
+    lesion_val = data[i, j]
+    if (!is.na(lesion_val) && !is.na(lesion_val) ){
+      if (nchar(lesion_val) == 5) {
+        if (substr(lesion_val, 1, 2) == "11"){
+          data$lesionSite[i] <- 11
+          data$lesionType[i] <- substr(lesion_val, 3, 3) %>% as.numeric()
+          data$lesionSubType[i] <- substr(lesion_val, 4, 4) %>% as.numeric()
+          data$lesionCode[i] <- substr(lesion_val, 5, 5) %>% as.numeric()
+        }
+        else {
+          if (data$lesionSite[i] < substr(lesion_val, 1, 1) %>% as.numeric()){
+            data$lesionSite[i] <- substr(lesion_val, 1, 1) %>% as.numeric()
+            data$lesionType[i] <- substr(lesion_val, 2, 2) %>% as.numeric()
+            data$lesionSubType[i] <- substr(lesion_val, 3, 3) %>% as.numeric()
+            data$lesionCode[i] <- substr(lesion_val, 4, 5) %>% as.numeric()
+          }
+        }
+      }
+      else {
+        if (data$lesionSite[i] < substr(lesion_val, 1, 1) %>% as.numeric()) {
+          lesion_val <- str_pad(lesion_val, width = 4, side = "right", pad = "0")
+          data$lesionSite[i] <- substr(lesion_val, 1, 1) %>% as.numeric()
+          data$lesionType[i] <- substr(lesion_val, 2, 2) %>% as.numeric()
+          data$lesionSubType[i] <- substr(lesion_val, 3, 3) %>% as.numeric()
+          data$lesionCode[i] <- substr(lesion_val, 4, 4) %>% as.numeric()
+        }
+      }
+    }
+  }
+}
+
+data <- data %>% select(-c("lesion_1", "lesion_2", "lesion_3"))
+non_ohe_cols <- non_ohe_cols[!non_ohe_cols %in% c("lesion_1", "lesion_2", "lesion_3")]
+
+
+lesionSiteDict <- c("11" = "all intestinal sites",
+                    "1" = "gastric",
+                    "2" = "sm intestine",
+                    "3" = "lg colon",
+                    "4" = "lg colon and cecum",
+                    "5" = "cecum",
+                    "6" = "transverse colon",
+                    "7" = "retum/descending colon",
+                    "8" = "uterus",
+                    "9" = "bladder",
+                    "0" = "none",
+                    "-1" = "none")
+
+lesionTypeDict <- c("1" = "simple",
+                    "2" = "strangulation",
+                    "3" = "inflammation",
+                    "4" = "other",
+                    "5" = "other",
+                    "6" = "other",
+                    "7" = "other",
+                    "8" = "other",
+                    "9" = "other",
+                    "0" = "other",
+                    "-1" = "other") 
+
+lesionSubTypeDict <- c("1" = "mechanical",
+                       "2" = "paralytic",
+                       "3" = "n/a",
+                       "4" = "n/a",
+                       "5" = "n/a",
+                       "6" = "n/a",
+                       "7" = "n/a",
+                       "8" = "n/a",
+                       "9" = "n/a",
+                       "0" = "n/a",
+                       "-1" = "n/a")   
+
+lesionCodeDict <- c("10" = "displacement",
+                    "1" = "obturation",
+                    "2" = "intrinsic",
+                    "3" = "extrinsic",
+                    "4" = "adynamic",
+                    "5" = "volvulus/torsion",
+                    "6" = "intussuption",
+                    "7" = "thromboembolic",
+                    "8" = "hernia",
+                    "9" = "lipoma/slenic incarceration",
+                    "0" = "n/a",
+                    "-1" = "n/a")
+
+data <- data %>% mutate(lesionSite = 
+                          str_replace_all(lesionSite, lesionSiteDict),
+                        lesionType = 
+                          str_replace_all(lesionType, lesionTypeDict),
+                        lesionSubType = 
+                          str_replace_all(lesionSubType, lesionSubTypeDict),
+                        lesionCode = 
+                          str_replace_all(lesionCode, lesionCodeDict))
+```
+
+## Codify attributes
+
+```{r, echo=TRUE, results='hold', message=FALSE, warning=FALSE}
+ohe_cols <- c(ohe_cols, "lesionSite", "lesionType", "lesionSubType", 
+              "lesionCode")
+data <- data %>% select(-c("cp_data"))
+non_ohe_cols <- non_ohe_cols[!non_ohe_cols %in% c("cp_data")]
+data[non_ohe_cols] <- lapply(data[non_ohe_cols], function(x) as.numeric(x))
+
+```
+
+# Coding hospital_number
+
+I will consider only the most relevant hospital. If the number of occurrences in
+the train data drop by 50% of the most frequent, the institution will be coded
+as other
+
+```{r}
+hospital_number_codifier <- as.data.frame(table(data$hospital_number))
+colnames(hospital_number_codifier) <- c("hospital_number", "freq")
+hospital_number_codifier <- hospital_number_codifier %>% arrange(desc(freq))
+
+data$hospital_number <- data$hospital_number %>% factor(., ordered = FALSE)
+
+```
+
+Impute absent values
+```{r}
+# numeric imputation (KNN_imputer in the pipeline is too slow)
+data_temp <- data[, non_ohe_cols, drop = FALSE]
+data_temp <- as.matrix(data_temp)
+data_temp <- impute.knn(data_temp, k=10, rng.seed = 400)$data # Tested 17 and 5, 10 bringing the best result
+data_temp <- as.data.frame(data_temp)
+data[non_ohe_cols] <- data_temp
+rm(data_temp)
+
+data <- data %>% distinct()
+
+# Nominal atributes will be imputed in the pipeline
+```
+
+## Complete initial preparations
+
+## Exploratory analysis
+
+```{r, echo=TRUE, results='hold', message=FALSE, warning=FALSE}
+# Passing outcome to numeric
+
+data <- data %>% mutate(outcome = 
+                          gsub("died", "2", outcome))
+
+data <- data %>% mutate(outcome = 
+                          gsub("euthanized", "1", outcome))
+
+data <- data %>% mutate(outcome = 
+                          gsub("lived", "0", outcome))
+
+data <- data %>% relocate(outcome, .after = last_col())
+
+data$outcome <- data$outcome %>% as.numeric()
+
+histograms <- lapply(names(data[c(non_ohe_cols, 'outcome')]), function(var_name) {
+  p <- ggplot(data, aes(x = .data[[var_name]])) +
+    geom_histogram() +
+    labs(title = var_name)
+  
+  ggplotly(p)
+})
+
+for (hist in histograms) {
+  print(hist)
+}
+
+
+```
+By the distribution of histogram, the variables `abdomo_protein`, `pulse`, 
+`respiratory_rate`, `total_protein` are left skewed and `peristalsis` 
+are right skewed.They will be treated in the pipeline.
+
+In the pipeline, all numeric variables will be treated by step_orderNorm().
+
+```{r}
+left_skewed = c('abdomo_protein', 'pulse', 'respiratory_rate',
+               'total_protein')
+```
+
+
+```{r, echo=TRUE, results='hold', message=FALSE, warning=FALSE}
+data_num <- data[c(non_ohe_cols, 'outcome')]
+
+# Correlation verification
+matrix_cor <- cor(data_num[, 1:ncol(data_num)], use = "complete.obs")
+
+# Check correlation through heatmap
+matrix_cor_melt <- reshape2::melt(matrix_cor)
+ggplot(matrix_cor_melt, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Correlation Matrix")
+
+# data type definition for modeling
+data$outcome <- data$outcome %>% factor(., levels = c("2", "1", "0"))
+```
+Conclusion: Any variable was found with a great correlation with the outcome. 
+I decided not to remove any variables, even if they have a low correlation with 
+the outcome, because combined variables can be significant, even if they aren't
+individually significant. Variables with high correlation with each other
+will be removed in the pipeline.
+
+## Save data prepared for model tunning
+
+```{r}
+metadata <- list(
+  'ohe_cols' = ohe_cols,
+  'non_ohe_cols' = non_ohe_cols,
+  'left_skewed' = left_skewed
+)
+
+write_rds(metadata, "../../01.data/processed/01.R/metadata.rds")
+write_rds(data, "../../01.data/processed/01.R/dataPrepared.rds")
+write_rds(hospital_number_codifier, "../../02.resources/01.R/hospital_number_codifier_v0.1.rds")
+```
+
