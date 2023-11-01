@@ -330,7 +330,7 @@ def scrub_feature_engineering(data, train=False):
     data_scaled = data_scaled.reset_index(drop=True)
     data_scaled = data_scaled.set_index(data[data_cols].index)
     data_scaled.columns = data[data_cols].columns
-    
+
     data = cudf.concat([data.drop(columns=data_cols), data_scaled], axis=1)
 
     del data_scaled
