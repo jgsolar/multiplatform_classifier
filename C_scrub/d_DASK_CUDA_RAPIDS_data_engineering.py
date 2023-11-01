@@ -256,6 +256,8 @@ def scrub_feature_engineering(data, train=False):
     # The premise of the exercise of keeping all possible operation inside dask_cudf,
     # in order to assess its project complexities cannot be maintained at this point
 
+    # Index needed to be recomposed in test data, there are some index wrong management in library
+
     data = cudf.DataFrame(data.compute())
 
     if train:
@@ -265,8 +267,7 @@ def scrub_feature_engineering(data, train=False):
         ohe_encoder = load(os.path.join(RESOURCES_DIR, 'ohe_encoder_v0.1.joblib'))
 
     ohe_cols_data = ohe_encoder.transform(data[ohe_cols])
-    ohe_cols_data = cudf.DataFrame(ohe_cols_data, columns=ohe_encoder.get_feature_names(ohe_cols),
-                                   index=data[ohe_cols].index)
+    ohe_cols_data = cudf.DataFrame(ohe_cols_data, columns=ohe_encoder.get_feature_names(ohe_cols))
     ohe_cols_data = ohe_cols_data.set_index(data[ohe_cols].index)
     data = cudf.concat([data.drop(columns=ohe_cols), ohe_cols_data], axis=1)
     ohe_cols_encoded = ohe_encoder.get_feature_names(ohe_cols).tolist()
@@ -298,19 +299,25 @@ def scrub_feature_engineering(data, train=False):
 
     #%% Left-skewed normalization
 
+    # Index needed to be recomposed in test data, there are some index wrong management in library
+
     left_skewed = ['abdomo_protein', 'pulse', 'respiratory_rate', 'total_protein']
 
     log1cp_transformer = FunctionTransformer(func=cp.log1p)
     data_normalized = log1cp_transformer.transform(data[left_skewed])
+
     data_normalized = data_normalized.reset_index(drop=True)
     data_normalized = data_normalized.set_index(data[left_skewed].index)
     data_normalized.columns = data[left_skewed].columns
+
     data = cudf.concat([data.drop(columns=left_skewed), data_normalized], axis=1)
 
 
     del log1cp_transformer, left_skewed, data_normalized
 
     #%% Standard scaling
+
+    # Index needed to be recomposed in test data, there are some index wrong management in library
 
     if train:
         standard_scaler_transformer = StandardScaler(copy=False, with_std=True)
@@ -319,9 +326,11 @@ def scrub_feature_engineering(data, train=False):
         standard_scaler_transformer = load(os.path.join(RESOURCES_DIR, 'standard_scaler_transformer_v0.1.joblib'))
 
     data_scaled = standard_scaler_transformer.transform(data[data_cols])
+
     data_scaled = data_scaled.reset_index(drop=True)
     data_scaled = data_scaled.set_index(data[data_cols].index)
     data_scaled.columns = data[data_cols].columns
+    
     data = cudf.concat([data.drop(columns=data_cols), data_scaled], axis=1)
 
     del data_scaled
