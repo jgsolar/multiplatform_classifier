@@ -6,3 +6,8 @@
 .idea/multiplatform_classifier.iml
 *.log
 *.pyc
+.readme_images/Multiplatform classifier.png
+.readme_images/Imagens.pptx
+multiplatform_classifier.Rproj
+.idea/vcs.xml
+.idea/modules.xml
