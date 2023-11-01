@@ -17,6 +17,13 @@
             </RMarkdownRenderProfile>
           </value>
         </entry>
+        <entry key="file://$PROJECT_DIR$/D_exploratory_analysis/a_R_tidy_verse_exploratory_analysis.Rmd">
+          <value>
+            <RMarkdownRenderProfile>
+              <option name="outputDirectoryUrl" value="file://$PROJECT_DIR$/D_exploratory_analysis" />
+            </RMarkdownRenderProfile>
+          </value>
+        </entry>
         <entry key="file://$PROJECT_DIR$/E_modeling/a_R_tidy_models_modeling.Rmd">
           <value>
             <RMarkdownRenderProfile>
