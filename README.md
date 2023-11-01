@@ -13,7 +13,7 @@ D. CUDA RAPIDS with DASK, which enables multi-node and multi-GPU processing.
 The project was developed encompassing all stages of a data science project,
 which are presented in the diagram below:
 
-<img height="450" src="/home/jgsolar/Documentos/SHARED/Projetos Pessoais/multiplatform_classifier/.readme_images/project_stages.png" width="450"/>
+<img height="450" src=".readme_images/project_stages.png" width="450"/>
 
 All these stages were completely developed in each platform, except for the 
 exploratory analysis, which highlights data characteristics and guided the 
