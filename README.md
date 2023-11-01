@@ -7,7 +7,9 @@ specific tools:
 A. R, using tidyverse and tidymodels;  
 B. Python, using pandas and scikit-learn;  
 C. CUDA RAPIDS, using cuDF and cuML for GPU processing;  
-D. CUDA RAPIDS with DASK, which enables multi-node and multi-GPU processing.  
+D. CUDA RAPIDS with DASK, which enables multi-node and multi-GPU processing.      
+
+
 
 
 The project was developed encompassing all stages of a data science project,
