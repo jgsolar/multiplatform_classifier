@@ -1,5 +1,6 @@
 # Multiplatform classifier
-November 1, 2023.
+_Written on November 1, 2023._
+
 
 To evaluate the complexity of implementing a data science pipeline,
 a classification project was implemented on four different platforms with 
