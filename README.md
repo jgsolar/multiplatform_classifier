@@ -60,15 +60,15 @@ Python will make this force available, with some effort for the developer.
 3. CUDA RAPIDS enter a different complexity level. When operating in the GPU, the
 CPU computing flexibility isn't available anymore. Parallel processing
 brings a lot of restrictions on how to operate over data and make all data 
-manipulation more complex. The number of packages and tools available is  
-limited, what makes the scientist confined by the hardware characteristics and
+manipulation more complex. The number of packages and tools available is limited,
+what makes the scientist confined by the hardware characteristics and
 the development degree of the official NVIDIA ecosystem. The GPU can offer great
 computing power scalability, but this power cannot be delivered to every problem 
 faced by the scientist. It's a powerful tool but not so versatile and flexible as
 tidymodels and scikit-learn.
 
 
-4. CUDA RAPIDS operating over DASK is the most challenger one. This platform isn't
+5. CUDA RAPIDS operating over DASK is the most challenger one. This platform isn't
 designed to deliver a complete solution inside its ecosystem. It can offer 
 exceptional tools for working on very huge amount of data, which cannot be allocated
 in local memory and cannot be processed by local resources. But working on a 
