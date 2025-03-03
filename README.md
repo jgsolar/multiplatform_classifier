@@ -53,7 +53,7 @@ he needs to interoperate. The good side is computing power. Python can deliver
 good performance in its packages, delivering good parallel processing with
 multiple CPU cores, almost transparent access to local GPU and complete integration
 with CUDA environment through RAPIDS. If the scientist has a more complex problem
-to solve that R, the premium "swiss army knife" cannot deliver the force needed,
+to solve that R, the premium "swiss army knife", cannot deliver the force needed,
 Python will make this force available, with some effort for the developer.
 
 
